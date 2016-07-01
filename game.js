@@ -5,6 +5,7 @@ const Game = function () {
 
     function game() {
         this.currentRow = 0;
+        this.points = 0;
         this.playerIndex = PLAYER;
 
         this.table = [
@@ -20,7 +21,6 @@ const Game = function () {
 
     game.prototype = {
         render() {
-            console.log(this.playerIndex);
             const table = document.getElementById('table');
             table.innerHTML = '';
 
@@ -69,7 +69,6 @@ const Game = function () {
                     break;
                 case 39:
                     this.playerRight();
-                    //right
                     break;
             }
         },
@@ -77,7 +76,7 @@ const Game = function () {
         start() {
             setInterval(() => {
                 this.tick();
-            }, 130);
+            }, 145);
         },
 
         tick() {
