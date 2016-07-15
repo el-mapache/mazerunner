@@ -1,6 +1,6 @@
 'use strict';
 
-let gameState = {
+var gameState = {
   rows: 5,
   columns: 5,
   playerColumn: 2,
@@ -10,26 +10,29 @@ let gameState = {
   points: 0,
   gameBoard: [],
   resolvedGameBoard: []
-}
+};
 gameState.gameBoard = generateBoard(gameState);
 gameState.resolvedGameBoard = gameState.gameBoard.slice();
 
 function changeState(stateChange) {
-  const nextState = Object.assign({}, gameState, stateChange);
+  var nextState = Object.assign({}, gameState, stateChange);
 
-  const composedState = compose(nextState, [
-    addWall,
-    addPlayer,
-    checkCollision
-  ]);
+  var composedState = compose(nextState, [addWall, addPlayer, checkCollision]);
 
-  const { wallRow, openingColumn, points, playerColumn, gameBoard } = composedState;
-  gameState = Object.assign({}, gameState, { resolvedGameBoard: gameBoard, points, playerColumn, wallRow, openingColumn });
+  var wallRow = composedState.wallRow;
+  var openingColumn = composedState.openingColumn;
+  var points = composedState.points;
+  var playerColumn = composedState.playerColumn;
+  var gameBoard = composedState.gameBoard;
+
+  gameState = Object.assign({}, gameState, { resolvedGameBoard: gameBoard, points: points, playerColumn: playerColumn, wallRow: wallRow, openingColumn: openingColumn });
 }
 
 function generateBoard(gameState) {
-  const { rows, columns } = gameState;
-  const gameBoard = [];
+  var rows = gameState.rows;
+  var columns = gameState.columns;
+
+  var gameBoard = [];
 
   for (var row = 0; row < rows; row++) {
     gameBoard.push([]);
@@ -43,8 +46,11 @@ function generateBoard(gameState) {
 }
 
 function addWall(gameState) {
-  const { gameBoard, wallRow, openingColumn } = gameState;
-  const nextGameBoard = gameBoard.slice();
+  var gameBoard = gameState.gameBoard;
+  var wallRow = gameState.wallRow;
+  var openingColumn = gameState.openingColumn;
+
+  var nextGameBoard = gameBoard.slice();
 
   nextGameBoard[wallRow] = [1, 1, 1, 1, 1];
   nextGameBoard[wallRow][openingColumn] = 0;
@@ -53,20 +59,27 @@ function addWall(gameState) {
 }
 
 function addPlayer(gameState) {
-  const { playerColumn, playerValue } = gameState;
-  const { rows, gameBoard } = gameState;
+  var playerColumn = gameState.playerColumn;
+  var playerValue = gameState.playerValue;
+  var rows = gameState.rows;
+  var gameBoard = gameState.gameBoard;
 
-  const nextGameBoard = gameBoard.slice();
+  var nextGameBoard = gameBoard.slice();
 
-  //nextGameBoard[rows - 1] = [0, 0, 0, 0, 0];
-  nextGameBoard[rows - 1][playerColumn]= playerValue;
+  nextGameBoard[rows - 1] = [0, 0, 0, 0, 0];
+  nextGameBoard[rows - 1][playerColumn] = playerValue;
 
   return Object.assign({}, gameState, { gameBoard: nextGameBoard });
 }
 
 function checkCollision(gameState) {
-  const { playerColumn, wallRow, rows, openingColumn, points } = gameState;
-  let nextPoints = points;
+  var playerColumn = gameState.playerColumn;
+  var wallRow = gameState.wallRow;
+  var rows = gameState.rows;
+  var openingColumn = gameState.openingColumn;
+  var points = gameState.points;
+
+  var nextPoints = points;
 
   if (wallRow === rows - 1) {
     nextPoints = playerColumn === openingColumn ? points + 1 : 0;
@@ -77,22 +90,28 @@ function checkCollision(gameState) {
 
 function render(nextState) {
   // Clear the table
-  const el = document.getElementById('table');
+  var el = document.getElementById('table');
   el.innerHTML = '';
 
-  const { resolvedGameBoard, playerValue, points } = nextState;
-  const table = document.createElement('table');
+  var resolvedGameBoard = nextState.resolvedGameBoard;
+  var playerValue = nextState.playerValue;
+  var points = nextState.points;
 
-  resolvedGameBoard.forEach((row) => {
-    const tr = document.createElement('tr');
+  var table = document.createElement('table');
 
-    row.forEach((col) => {
-      const td = document.createElement('td');
-      const className = (function() {
-        switch(col) {
-            case 0: return 'empty'
-            case 1: return 'filled'
-            case playerValue: return 'player'
+  resolvedGameBoard.forEach(function (row) {
+    var tr = document.createElement('tr');
+
+    row.forEach(function (col) {
+      var td = document.createElement('td');
+      var className = (function () {
+        switch (col) {
+          case 0:
+            return 'empty';
+          case 1:
+            return 'filled';
+          case playerValue:
+            return 'player';
         }
       })();
       td.className = className;
@@ -107,9 +126,9 @@ function render(nextState) {
 }
 
 function compose(gameState, transforms) {
-  let nextState = gameState;
+  var nextState = gameState;
 
-  transforms.forEach(function(transform) {
+  transforms.forEach(function (transform) {
     nextState = transform(nextState);
   });
 
@@ -117,15 +136,20 @@ function compose(gameState, transforms) {
 }
 
 // Master render loop
-setInterval(function() {
+setInterval(function () {
   render(gameState);
 }, 22);
 
 // Move the wall down
-setInterval(function() {
-  const { wallRow, openingColumn, rows, columns } = gameState;
-  let nextOpeningColumn = openingColumn;
-  let nextWallRow = wallRow + 1;
+setInterval(function () {
+  var _gameState = gameState;
+  var wallRow = _gameState.wallRow;
+  var openingColumn = _gameState.openingColumn;
+  var rows = _gameState.rows;
+  var columns = _gameState.columns;
+
+  var nextOpeningColumn = openingColumn;
+  var nextWallRow = wallRow + 1;
   if (nextWallRow > rows - 1) {
     nextWallRow = 0;
     nextOpeningColumn = Math.round(Math.random() * (columns - 1));
@@ -137,28 +161,33 @@ setInterval(function() {
 window.addEventListener('keydown', handleMove);
 
 function handleMove(e) {
-  const keyCode = e.keyCode;
+  var keyCode = e.keyCode;
 
-  switch(keyCode) {
+  switch (keyCode) {
     case 37:
-        playerLeft();
-        break;
+      playerLeft();
+      break;
     case 39:
-        playerRight();
-        break;
+      playerRight();
+      break;
   }
 }
 
 function playerLeft() {
-  const { playerColumn } = gameState;
-  const nextPlayerColumn = playerColumn ? playerColumn - 1 : 0;
+  var _gameState2 = gameState;
+  var playerColumn = _gameState2.playerColumn;
+
+  var nextPlayerColumn = playerColumn ? playerColumn - 1 : 0;
 
   changeState({ playerColumn: nextPlayerColumn });
 }
 
 function playerRight() {
-  const { playerColumn, columns } = gameState;
-  const nextPlayerColumn = playerColumn === columns - 1 ? columns - 1 : playerColumn + 1;
+  var _gameState3 = gameState;
+  var playerColumn = _gameState3.playerColumn;
+  var columns = _gameState3.columns;
+
+  var nextPlayerColumn = playerColumn === columns - 1 ? columns - 1 : playerColumn + 1;
 
   changeState({ playerColumn: nextPlayerColumn });
 }
@@ -296,7 +325,6 @@ function playerRight() {
 //
 //     return game;
 // }();
-
 
 // const game = new Game();
 // game.table[0] = game.generateRow();
