@@ -1,30 +1,38 @@
 'use strict';
 
+/*
+GAME
+ */
+const POINTS_TO_WIN = 5;
+
 let gameState = {
   rows: 5,
   columns: 5,
   playerColumn: 2,
+  cpuColumn: 1,
   wallRow: 0,
   openingColumn: 0,
   playerValue: 2,
+  cpuValue: 3,
+  playerAndCpuValue: 4,
   points: 0,
-  gameBoard: [],
-  resolvedGameBoard: []
-}
-gameState.gameBoard = generateBoard(gameState);
-gameState.resolvedGameBoard = gameState.gameBoard.slice();
+  cpuPoints: 0,
+  cpuPoints: 0,
+  gameBoard: []
+};
 
 function changeState(stateChange) {
   const nextState = Object.assign({}, gameState, stateChange);
 
-  const composedState = compose(nextState, [
+  gameState = compose(nextState, [
+    generateBoard,
     addWall,
+    addCPU,
     addPlayer,
-    checkCollision
+    addOverlap,
+    checkCollision,
+    checkWinCondition
   ]);
-
-  const { wallRow, openingColumn, points, playerColumn, gameBoard } = composedState;
-  gameState = Object.assign({}, gameState, { resolvedGameBoard: gameBoard, points, playerColumn, wallRow, openingColumn });
 }
 
 function generateBoard(gameState) {
@@ -39,7 +47,7 @@ function generateBoard(gameState) {
     }
   }
 
-  return gameBoard;
+  return Object.assign({}, gameState, { gameBoard });
 }
 
 function addWall(gameState) {
@@ -56,43 +64,95 @@ function addPlayer(gameState) {
   const { playerColumn, playerValue } = gameState;
   const { rows, gameBoard } = gameState;
 
-  const nextGameBoard = gameBoard.slice();
+  gameBoard[rows - 1][playerColumn] = playerValue;
 
-  //nextGameBoard[rows - 1] = [0, 0, 0, 0, 0];
-  nextGameBoard[rows - 1][playerColumn]= playerValue;
+  return Object.assign({}, gameState, { gameBoard });
+}
 
-  return Object.assign({}, gameState, { gameBoard: nextGameBoard });
+function addCPU(gameState) {
+  const { cpuColumn, cpuValue } = gameState;
+  const { rows, gameBoard } = gameState;
+
+  gameBoard[rows - 1][cpuColumn] = cpuValue;
+
+  return Object.assign({}, gameState, { gameBoard });
+}
+
+function addOverlap(gameState) {
+  const { cpuColumn, playerColumn, playerAndCpuValue } = gameState;
+  const { rows, gameBoard } = gameState;
+
+  if (cpuColumn === playerColumn) {
+    gameBoard[rows - 1][playerColumn] = playerAndCpuValue;
+  }
+
+  return Object.assign({}, gameState, { gameBoard });
 }
 
 function checkCollision(gameState) {
-  const { playerColumn, wallRow, rows, openingColumn, points } = gameState;
+  const { playerColumn, cpuColumn, wallRow, rows, openingColumn, points, cpuPoints } = gameState;
   let nextPoints = points;
+  let nextCpuPoints = cpuPoints;
 
   if (wallRow === rows - 1) {
     nextPoints = playerColumn === openingColumn ? points + 1 : 0;
+    nextCpuPoints = cpuColumn === openingColumn ? cpuPoints + 1 : 0;
   }
 
-  return Object.assign({}, gameState, { points: nextPoints });
+  if (cpuPoints !== 0 && nextCpuPoints === 0) {
+    onCpuDead();
+  }
+
+  return Object.assign({}, gameState, { points: nextPoints, cpuPoints: nextCpuPoints });
+}
+
+function checkWinCondition(gameState) {
+  const { points, cpuPoints } = gameState;
+  let gameOver = false;
+  let nextPoints = {};
+
+  if (points === POINTS_TO_WIN) {
+    alert('player wins');
+    gameOver = true;
+  } else if (cpuPoints === POINTS_TO_WIN) {
+    alert('cpu wins');
+    gameOver = true;
+  }
+
+  if (gameOver) {
+    nextPoints = {
+      points: 0,
+      cpuPoints: 0
+    };
+  }
+
+  return Object.assign({}, gameState, nextPoints);
 }
 
 function render(nextState) {
+  const { gameBoard, playerValue, points, cpuPoints, cpuValue, playerAndCpuValue } = nextState;
+
   // Clear the table
   const el = document.getElementById('table');
-  el.innerHTML = '';
+  el.innerHTML = ''
 
-  const { resolvedGameBoard, playerValue, points } = nextState;
+  document.getElementById('points').innerHTML = points;
+  document.getElementById('cpuPoints').innerHTML = cpuPoints;
+
   const table = document.createElement('table');
 
-  resolvedGameBoard.forEach((row) => {
+  gameBoard.forEach((row) => {
     const tr = document.createElement('tr');
 
     row.forEach((col) => {
       const td = document.createElement('td');
       const className = (function() {
         switch(col) {
-            case 0: return 'empty'
-            case 1: return 'filled'
-            case playerValue: return 'player'
+            case 0: return 'empty';
+            case 1: return 'filled';
+            case playerValue: return 'player';
+            case cpuValue: return 'cpu';
+            case playerAndCpuValue: return 'playerAndCpu';
         }
       })();
       td.className = className;
@@ -116,10 +176,19 @@ function compose(gameState, transforms) {
   return nextState;
 }
 
-// Master render loop
-setInterval(function() {
+function renderGame() {
   render(gameState);
-}, 22);
+
+  window.requestAnimationFrame(renderGame);
+}
+
+function onNewMaze() {
+  console.log("New Maze");
+}
+
+function onCpuDead() {
+  console.log("Cpu Dead");
+}
 
 // Move the wall down
 setInterval(function() {
@@ -131,10 +200,18 @@ setInterval(function() {
     nextOpeningColumn = Math.round(Math.random() * (columns - 1));
   }
 
-  changeState({ wallRow: nextWallRow, openingColumn: nextOpeningColumn });
-}, 500);
+  if (nextWallRow === 0) {
+    onNewMaze();
+  }
 
-window.addEventListener('keydown', handleMove);
+  changeState({ wallRow: nextWallRow, openingColumn: nextOpeningColumn });
+}, 250);
+
+window.addEventListener('keydown', handleMove)
+
+/*
+PLAYER
+ */
 
 function handleMove(e) {
   const keyCode = e.keyCode;
@@ -146,158 +223,54 @@ function handleMove(e) {
     case 39:
         playerRight();
         break;
+      case 65:
+        cpuLeft();
+        break;
+      case 83:
+        cpuRight();
+        break;
   }
 }
 
 function playerLeft() {
-  const { playerColumn } = gameState;
-  const nextPlayerColumn = playerColumn ? playerColumn - 1 : 0;
+  const { playerColumn, rows, wallRow } = gameState;
+  const wallAtPlayer = gameState.wallRow === rows - 1;
 
-  changeState({ playerColumn: nextPlayerColumn });
+  if (!wallAtPlayer) {
+    const nextPlayerColumn = playerColumn ? playerColumn - 1 : 0;
+    changeState({ playerColumn: nextPlayerColumn });
+  }
 }
 
 function playerRight() {
-  const { playerColumn, columns } = gameState;
-  const nextPlayerColumn = playerColumn === columns - 1 ? columns - 1 : playerColumn + 1;
+  const { playerColumn, rows, columns, wallRow } = gameState;
+  const wallAtPlayer = gameState.wallRow === rows - 1;
 
-  changeState({ playerColumn: nextPlayerColumn });
+  if (!wallAtPlayer) {
+    const nextPlayerColumn = playerColumn === columns - 1 ? columns - 1 : playerColumn + 1;
+    changeState({ playerColumn: nextPlayerColumn });
+  }
 }
 
-// const Game = function () {
-//     const PLAYER = 2;
-//
-//     function game() {
-//         this.currentRow = 0;
-//         this.points = 0;
-//         this.playerIndex = PLAYER;
-//
-//         this.table = [
-//             [0, 0, 0, 0, 0],
-//             [0, 0, 0, 0, 0],
-//             [0, 0, 0, 0, 0],
-//             [0, 0, 0, 0, 0],
-//             [0, 0, 0, 0, 0]
-//         ];
-//
-//         this.handleMove = this.handleMove.bind(this);
-//     }
-//
-//     game.prototype = {
-//         render() {
-//             const table = document.getElementById('table');
-//             table.innerHTML = '';
-//
-//             const copy = this.table.slice();
-//             copy[4] = this.table[4].slice();
-//             copy[4][this.playerIndex] = PLAYER;
-//
-//             copy.forEach((row) => {
-//                 const tr = document.createElement('tr');
-//                 const fragment = document.createDocumentFragment();
-//
-//                 row.forEach((col) => {
-//                     const td = document.createElement('td');
-//                     const className = (function() {
-//                         switch(col) {
-//                             case 0: return 'empty'
-//                             case 1: return 'filled'
-//                             case PLAYER: return 'player'
-//                         }
-//                     })();
-//                     td.className = className;
-//
-//                     fragment.appendChild(td);
-//                 });
-//
-//                 tr.appendChild(fragment);
-//                 table.appendChild(tr);
-//             });
-//
-//             if (this.checkCollision()) {
-//                 this.points = 0;
-//                 window.removeEventListener('keydown', this.handleMove);
-//             } else if (this.currentRow === this.table.length - 1) {
-//                 this.points += 1;
-//             }
-//
-//             document.getElementById('points').textContent = this.points;
-//         },
-//
-//         handleMove(e) {
-//             const keyCode = e.keyCode;
-//
-//             switch(keyCode) {
-//                 case 37:
-//                     this.playerLeft();
-//                     break;
-//                 case 39:
-//                     this.playerRight();
-//                     break;
-//             }
-//         },
-//
-//         start() {
-//             setInterval(() => {
-//                 this.tick();
-//             }, 145);
-//         },
-//
-//         tick() {
-//             const currentRow = this.currentRow;
-//
-//             if (!this.points) {
-//                 window.addEventListener('keydown', this.handleMove);
-//             }
-//
-//             if (currentRow < this.table.length - 1) {
-//                 this.table[currentRow + 1] = this.table[currentRow].slice();
-//                 this.table[currentRow] = this.generateBlankRow();
-//                 this.currentRow++;
-//             } else {
-//                 this.table[currentRow] = this.generateBlankRow();
-//                 this.table[0] = this.generateRow();
-//                 this.currentRow = 0;
-//             }
-//
-//             this.render();
-//         },
-//
-//         checkCollision() {
-//             return this.table[4][this.playerIndex] === 1 ? true : false;
-//         },
-//
-//         generateBlankRow() {
-//             return [0, 0, 0, 0, 0];
-//         },
-//
-//         generateRow() {
-//             const insertionPoint = Math.round(Math.random() * 4);
-//             let row = [1,1,1,1,1];
-//
-//             row[insertionPoint] = 0;
-//
-//             return row;
-//         },
-//
-//         playerLeft() {
-//             const currentPos = this.playerIndex;
-//             this.playerIndex = currentPos ? currentPos - 1 : 0;
-//
-//             this.render();
-//         },
-//
-//         playerRight() {
-//             const currentPos = this.playerIndex;
-//             this.playerIndex = currentPos === 4 ? 4 : currentPos + 1;
-//
-//             this.render();
-//         }
-//     };
-//
-//     return game;
-// }();
+function cpuLeft() {
+  const { cpuColumn, rows, wallRow } = gameState;
+  const wallAtPlayer = gameState.wallRow === rows - 1;
+
+  if (!wallAtPlayer) {
+    const nextCpuColumn = cpuColumn ? cpuColumn - 1 : 0;
+    changeState({ cpuColumn: nextCpuColumn });
+  }
+}
+
+function cpuRight() {
+  const { cpuColumn, rows, columns, wallRow } = gameState;
+  const wallAtPlayer = gameState.wallRow === rows - 1;
+
+  if (!wallAtPlayer) {
+    const nextCpuColumn = cpuColumn === columns - 1 ? columns - 1 : cpuColumn + 1;
+    changeState({ cpuColumn: nextCpuColumn });
+  }
+}
 
 
-// const game = new Game();
-// game.table[0] = game.generateRow();
-// game.start();
+renderGame();

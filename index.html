@@ -1,6 +1,12 @@
 <html>
     <head>
         <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+
             html {
                 font-family: Helvetica;
             }
@@ -9,21 +15,33 @@
                 height: 100px;
                 background-color: salmon;
             }
+            .cpu {
+                width: 100px;
+                height: 100px;
+                background-color: limegreen;
+            }
+            .playerAndCpu {
+              width: 100px;
+              height: 100px;
+              background-color: salmon;
+              outline: 4px solid limegreen;
+            }
             .filled {
                 width: 100px;
                 height: 100px;
                 background-color: #000;
             }
             .empty {
-                width: 98px;
-                height: 98px;
-                border: 1px solid #999;
+                width: 100px;
+                height: 100px;
+                outline: 1px solid #999;
             }
         </style>
     </head>
     <body>
         <h1>
-            <span>Dodges Executed: <span id="points"></span></span>
+            <span>Dodges Executed: <span id="points"></span></span> / 
+            <span>Dodges Executed: <span id="cpuPoints"></span></span>
         </h1>
         <div id="table"></div>
         <script src="./output.js"></script>
